@@ -1,0 +1,104 @@
+services:
+  mysql:
+    image: czdesign2023/balala-mysql:${VERSION}
+    restart: unless-stopped
+    healthcheck:
+      test: "mysqladmin ping -h localhost --silent"
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 15s
+    networks:
+      - bridge-net
+    ports:
+      - '${MYSQL_PORT}:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      # MYSQL_PWD: "${MYSQL_ROOT_PASSWORD}" # 加上这个mysql容器会提示错误，启动失败
+    volumes:
+      - mysql_data:/var/lib/mysql # 挂载mysql数据
+  redis:
+    image: redis:7.2.3
+    restart: unless-stopped
+    networks:
+      - bridge-net
+    volumes:
+      - redis_data:/data
+  api:
+    image: czdesign2023/balala-api:${VERSION}
+    restart: unless-stopped
+    healthcheck:
+      test: "nc -zv localhost 18001"
+      interval: 30s
+      timeout: 30s
+      retries: 100
+      start_period: 15s
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      TEA_IM_DOMAIN: "${TEA_IM_DOMAIN}"
+      TEA_IM_PRIVATE_KEY: "${TEA_IM_PRIVATE_KEY}"
+      TEA_IM_PLATFORM_CODE: "${TEA_IM_PLATFORM_CODE}"
+    networks:
+      - bridge-net
+    volumes:
+      - upload_files:/app/upload_files/ #挂载用户上传的文件
+      - river_files:/app/configs/var/ # 挂载river同步position
+    command: [ '-c', './configs/config.yaml' ] #指定配置文件
+    depends_on:
+      redis:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      es7:
+        condition: service_healthy
+  web:
+    image: czdesign2023/balala-web:${VERSION}
+    restart: unless-stopped
+    networks:
+      - bridge-net
+    ports:
+      - '${WEB_PORT}:80'
+    environment:
+      TZ: Asia/Shanghai
+    depends_on:
+      api:
+        condition: service_healthy
+
+  es7:
+    image: elasticsearch:7.17.22
+    restart: unless-stopped
+    healthcheck:
+      test: "nc -zv localhost 9200"
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 20s
+    mem_limit: 8g
+    networks:
+      - bridge-net
+    environment:
+      - discovery.type=single-node
+
+  mysql2es:
+    image: czdesign2023/balala-mysql2es:${VERSION}
+    restart: unless-stopped
+    networks:
+      - bridge-net
+    depends_on:
+      api:
+        condition: service_healthy
+    command: 
+     - "-my_addr"
+     - "mysql:3306"
+     - "-my_pass"
+     - "${MYSQL_ROOT_PASSWORD}"
+networks:
+  bridge-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
+  upload_files:
+  river_files:
