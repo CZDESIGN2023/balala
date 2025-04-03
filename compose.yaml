@@ -13,6 +13,7 @@ services:
     ports:
       - '${MYSQL_PORT}:3306'
     environment:
+      TZ: Asia/Shanghai
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
       # MYSQL_PWD: "${MYSQL_ROOT_PASSWORD}" # 加上这个mysql容器会提示错误，启动失败
     volumes:
