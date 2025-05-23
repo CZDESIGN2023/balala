@@ -1,6 +1,6 @@
 services:
   mysql:
-    image: czdesign2023/balala-mysql:${VERSION}
+    image: czdesign2025/balala-mysql:${VERSION}
     restart: unless-stopped
     healthcheck:
       test: "mysqladmin ping -h localhost --silent"
@@ -26,7 +26,7 @@ services:
     volumes:
       - redis_data:/data
   api:
-    image: czdesign2023/balala-api:${VERSION}
+    image: czdesign2025/balala-api:${VERSION}
     restart: unless-stopped
     healthcheck:
       test: "nc -zv localhost 18001"
@@ -54,7 +54,7 @@ services:
       es7:
         condition: service_healthy
   web:
-    image: czdesign2023/balala-web:${VERSION}
+    image: czdesign2025/balala-web:${VERSION}
     restart: unless-stopped
     networks:
       - bridge-net
@@ -82,7 +82,7 @@ services:
       - discovery.type=single-node
 
   mysql2es:
-    image: czdesign2023/balala-mysql2es:${VERSION}
+    image: czdesign2025/balala-mysql2es:${VERSION}
     restart: unless-stopped
     networks:
       - bridge-net
